@@ -5,10 +5,6 @@ import java.text.ParseException;
 
 public class Main {
 
-    /*
-    * if there is no row 'bout this year
-    * */
-
     public static void main(String[] args) throws SQLException, ParseException {
         DB db = new DB();
         Window window = new Window(db);

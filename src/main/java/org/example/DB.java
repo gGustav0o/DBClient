@@ -95,31 +95,14 @@ public class DB {
         return null;
     }
 
-    public Clazz[] getResearches(String search){
+    public DataBaseObject[] getObjects(String search, String table){
         try (Statement statement = connection.createStatement()) {
-            Clazz[] toReturn = new Clazz[10];
-            ResultSet resultSet = statement.executeQuery("SELECT *FROM research WHERE name LIKE '"+
+            DataBaseObject[] toReturn = new DataBaseObject[10];
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM " + table + " WHERE name LIKE '"+
                     search + "%'");
             int i = 0;
             while (resultSet.next()){
-                toReturn[i] = new Clazz(resultSet.getInt("id"), resultSet.getString("name"));
-                i++;
-            }
-            return toReturn;
-        } catch (SQLException e){
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public Clazz[] getOrganisations(String search){
-        try (Statement statement = connection.createStatement()) {
-            Clazz[] toReturn = new Clazz[10];
-            ResultSet resultSet = statement.executeQuery("SELECT *FROM organisation WHERE name LIKE '"+
-                    search + "%'");
-            int i = 0;
-            while (resultSet.next()){
-                toReturn[i] = new Clazz(resultSet.getInt("id"), resultSet.getString("name"));
+                toReturn[i] = new DataBaseObject(resultSet.getInt("id"), resultSet.getString("name"));
                 i++;
             }
             return toReturn;
@@ -146,24 +129,26 @@ public class DB {
 
     public boolean results(){
         try(Statement statement = connection.createStatement();
-            Statement undone = connection.createStatement()) {
+            Statement undone = connection.createStatement()
+        ) {
             ResultSet resultsDate = statement.executeQuery("SELECT deadline FROM year WHERE year = '" +
                                                             (date.getYear() + 1900 - 1) + "'");
+            System.err.println("DATE: " + (date.getYear() + 1900 - 1));
+            if (!resultsDate.isBeforeFirst()) return false;
             resultsDate.next();
             Date rDate = resultsDate.getDate("deadline");
-            System.out.println(rDate);
             rDate.setYear(rDate.getYear() + 1);
-            ResultSet set = undone.executeQuery("SELECT id FROM application WHERE status = 4");
-            set.next();
-            if (rDate.before(date) && set.next()) return true;
+            ResultSet set = undone.executeQuery("SELECT id FROM application WHERE status = 4 AND YEAR(date) = " + (date.getYear() + 1900 - 1));
+            System.err.println("DATE: " + (rDate.getYear() + 1900 - 1));
+            if (rDate.before(date) && set.isBeforeFirst()) return true;
         } catch (SQLException e){
             e.printStackTrace();
         }
         return false;
     }
     private boolean checkDeadline(){
-        return date.equals(deadline);
-        //return date.after(deadline);
+        //return date.equals(deadline);
+        return date.after(deadline);
     }
     private void calculateBudget(){
         System.out.println(budget);

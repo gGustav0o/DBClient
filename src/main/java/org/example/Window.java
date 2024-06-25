@@ -4,6 +4,8 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
@@ -16,9 +18,14 @@ public class Window {
         this.db = db;
 
         frame = new JFrame("Российский фонд фундаментальных исследований");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
         frame.setResizable(false);
+        frame.addWindowListener(new WindowAdapter(){
+            public void windowClosing(WindowEvent e){
+                db.closeConnection();
+                System.exit(0);
+            }
+        });
 
         container = frame.getContentPane();
         container.setLayout(new FlowLayout( FlowLayout.LEFT, 10, 10));
@@ -32,8 +39,8 @@ public class Window {
             try {
                 isOk = true;
                 dateParsed = new SimpleDateFormat("dd.MM.yyyy").parse(date);
-            } catch (ParseException e){
-                e.printStackTrace();
+            } catch (ParseException parseException){
+                parseException.printStackTrace();
                 isOk = false;
                 optionPaneMessage("Неверно введена дата!", "Дата");
                 continue;
@@ -57,11 +64,11 @@ public class Window {
                 , JOptionPane.INFORMATION_MESSAGE
         );
     }
-    private void setEditable(boolean editable, JTextField ... fields){
+    public static void setEditable(boolean editable, JTextField ... fields){
         for (JTextField i: fields)
             i.setEditable(editable);
     }
-    private void addComponents(Container container, JComponent... components){
+    public static void addComponents(Container container, JComponent... components){
         for (JComponent i: components)
             container.add(i);
     }

@@ -9,7 +9,6 @@ public class Generator {
 
     final static int NUMBER = 9999;
     final static int N = 100;
-
     final static String URL = "jdbc:mysql://localhost:3306/с";
     final static String USERNAME = "root";
     final static String PASSWORD = "17luv01LelYa2006";

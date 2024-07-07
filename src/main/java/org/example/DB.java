@@ -1,7 +1,6 @@
 package org.example;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,23 +11,20 @@ import static java.lang.Math.floor;
 
 public class DB {
     enum Status{
-        PENDING,//0
-        ACCEPTED,//1
-        DENIED,
-        FAILED,//2
-        IN_PROGRESS,//4
-        SUCCESS//3
-    }
-    enum Reason{
-        SQL_ERROR,
-        OK,
-        NO_INTEREST_IN_THEME,//5
-        FAILED_IN_PAST,//6
-        APPLICATION_OF_HEAD_ALREADY_APPLIED,//7
-        AFTER_DEADLINE//8
+        PENDING                                //0
+        , ACCEPTED                             //1
+        , FAILED                               //2
+        , SUCCESS                              //3
+        , IN_PROGRESS                          //4
+        , NO_INTEREST_IN_THEME                 //5
+        , FAILED_IN_PAST                       //6
+        , APPLICATION_OF_HEAD_ALREADY_APPLIED  //7
+        , AFTER_DEADLINE                       //8
+        , SQL_ERROR
+        , OK
     }
 
-    public int start = 0, end = 10;
+    public int start = 0 , end  = 10;
     public int start6 = 0, end6 = 10;
     public int start7 = 0, end7 = 10;
     public int start8 = 0, end8 = 10;
@@ -52,14 +48,11 @@ public class DB {
                 budget = year.getInt("budget");
                 if (isTodayAfterDeadline()) calculateBudget();
                 return true;
-            } catch (SQLException executeException){
-                executeException.printStackTrace();
             }
         } catch (SQLException prepareException) {
             prepareException.printStackTrace();
             return false;
         }
-        return false;
     }
     public void closeConnection(){
         try{
@@ -70,7 +63,7 @@ public class DB {
         }
     }
     public DB(){
-        final String URL = "jdbc:mysql://localhost:3306/rffi_model3t";
+        final String URL      = "jdbc:mysql://localhost:3306/rffi_model3t";
         final String USERNAME = "root";
         final String PASSWORD = "eHsdffgr848gtwr";
 
@@ -81,9 +74,9 @@ public class DB {
         }
     }
     public String[] getCompleted(String search){
-        String sqlGetCompleted = "SELECT fio FROM application WHERE fio LIKE '?%'  AND status = 4";
+        String sqlGetCompleted = "SELECT fio FROM application WHERE fio LIKE ? AND status = 4";
         try (PreparedStatement getCompletedStatement = connection.prepareStatement(sqlGetCompleted)) {
-            getCompletedStatement.setString(1, search);
+            getCompletedStatement.setString(1, search + "%");
             try(ResultSet resultSet = getCompletedStatement.executeQuery()) {
                 int i = 0;
                 String[] toReturn = new String[10];
@@ -93,8 +86,6 @@ public class DB {
                     i++;
                 }
                 return toReturn;
-            } catch (SQLException executeException) {
-                executeException.printStackTrace();
             }
         } catch (SQLException prepareException){
             prepareException.printStackTrace();
@@ -102,10 +93,9 @@ public class DB {
         return null;
     }
     public DataBaseObject[] getObjects(String search, String table){
-        String sqlGetObjects = "SELECT * FROM ? WHERE name LIKE '?%'";
+        String sqlGetObjects = "SELECT * FROM " + table + " WHERE name LIKE ?";
         try (PreparedStatement getObjectsStatement = connection.prepareStatement(sqlGetObjects)) {
-            getObjectsStatement.setString(1, table);
-            getObjectsStatement.setString(2,search);
+            getObjectsStatement.setString(1, search + "%");
             try(ResultSet resultSet = getObjectsStatement.executeQuery()) {
                 DataBaseObject[] toReturn = new DataBaseObject[10];
                 int i = 0;
@@ -114,8 +104,6 @@ public class DB {
                     i++;
                 }
                 return toReturn;
-            } catch (SQLException executeException) {
-                executeException.printStackTrace();
             }
         } catch (SQLException e){
             e.printStackTrace();
@@ -133,7 +121,7 @@ public class DB {
     }
     public boolean setResult(String name, boolean status){
         int r;
-        String sqlUpdateStatus = "UPDATE application SET status = ? WHERE status = 4 AND fio = '?'";
+        String sqlUpdateStatus = "UPDATE application SET status = ? WHERE status = 4 AND fio = ?";
         try(PreparedStatement updateStatusStatement = connection.prepareStatement(sqlUpdateStatus)) {
             updateStatusStatement.setString(2,name);
 
@@ -159,7 +147,7 @@ public class DB {
             getDeadlineStatement  .setInt(1, currentDate.get(Calendar.YEAR) - 1);
             getInProgressStatement.setInt(1, currentDate.get(Calendar.YEAR) - 1);
 
-            try(ResultSet lastYearDeadline = getDeadlineStatement.executeQuery();){
+            try(ResultSet lastYearDeadline = getDeadlineStatement.executeQuery()){
                 if (!lastYearDeadline.isBeforeFirst()) return false;
                 lastYearDeadline.next();
                 Date lastYearDeadlineDate = lastYearDeadline.getDate("deadline");
@@ -168,11 +156,7 @@ public class DB {
                 lastYearDeadlineCalendar.set(Calendar.YEAR, lastYearDeadlineCalendar.get(Calendar.YEAR) + 1);
                 try(ResultSet set = getInProgressStatement.executeQuery()) {
                     if (lastYearDeadlineCalendar.before(currentDate) && set.isBeforeFirst()) return true;
-                } catch (SQLException executeGetInProgressException) {
-                    executeGetInProgressException.printStackTrace();
                 }
-            } catch (SQLException executeGetDeadlineException){
-                executeGetDeadlineException.printStackTrace();
             }
         } catch (SQLException e){
             e.printStackTrace();
@@ -187,7 +171,7 @@ public class DB {
         try(Statement statement = connection.createStatement()) {
             ResultSet acceptedApplications = statement.executeQuery("SELECT * FROM application WHERE status = 1");
             boolean isOK = true;
-            String sqlUpdateAllottedSum = "UPDATE application SET allotted_sum = ?  WHERE fio = '?'";
+            String sqlUpdateAllottedSum = "UPDATE application SET allotted_sum = ?  WHERE fio = ?";
             try(PreparedStatement updateAllottedSumStatement = connection.prepareStatement(sqlUpdateAllottedSum)){
                 while (acceptedApplications.next()){
                     int    reqSum = acceptedApplications.getInt("requested_sum");
@@ -215,8 +199,6 @@ public class DB {
                         updateAllottedSumStatement.executeUpdate();
                     }
                 }
-            } catch (SQLException e){
-                e.printStackTrace();
             }
         } catch (SQLException e){
             e.printStackTrace();
@@ -263,9 +245,10 @@ public class DB {
         return text;
     }
     private void generateDenyLetter(int status, int id){
-        String text = "";
-        String theme = "";
-        String path = "denyLetters/";
+        String text  = ""
+             , theme = ""
+             , path  = "denyLetters/";
+
         String sqlGetFioTheme = "SELECT fio, theme FROM application WHERE id = ?";
         try(PreparedStatement getFioThemeStatement = connection.prepareStatement(sqlGetFioTheme)){
             try(ResultSet resultSet = getFioThemeStatement.executeQuery()){
@@ -276,7 +259,7 @@ public class DB {
                 resultSet.next();
                 text  = resultSet.getString("fio");
                 theme = resultSet.getString("theme");
-                path = path + text;
+                path  = path + text;
             }
         } catch (SQLException e){
             e.printStackTrace();
@@ -286,14 +269,12 @@ public class DB {
         text = generateDenyText(text, theme, status);
         writeMessage(file, text);
     }
-
     private void generateDenyLetter(int status, String name, String theme){
         String path = "denyLetters/" + name;
         File file = createFile(path);
         String text = generateDenyText(name, theme, status);
         writeMessage(file, text);
     }
-
     private void writeMessage(File file, String text){
         try(FileWriter writer = new FileWriter(file, true)) {
             writer.write(text);
@@ -302,7 +283,6 @@ public class DB {
             e.printStackTrace();
         }
     }
-
     private String generateAcceptText(String name, String theme){
         String text = name + "!\n";
         text += "Ваша заявка по теме " + theme + " была принята.\nЖелаем удачи в исследованиях!\n";
@@ -310,18 +290,18 @@ public class DB {
         return text;
     }
     private void generateAcceptLetter(int id){
-        String text = "";
-        String theme = "";
-        String path = "acceptLetters/";
+        String text  = ""
+             , theme = ""
+             , path  = "acceptLetters/";
+
         String sqlGetFioTheme = "SELECT fio, theme FROM application WHERE id = ?";
         try (PreparedStatement getFioThemeStatement = connection.prepareStatement(sqlGetFioTheme)){
+            getFioThemeStatement.setInt(1, id);
             try(ResultSet resultSet = getFioThemeStatement.executeQuery()){
                 resultSet.next();
                 text  = resultSet.getString("fio");
                 theme = resultSet.getString("theme");
-                path = path + text;
-            } catch (SQLException e){
-                e.printStackTrace();
+                path  = path + text;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -331,12 +311,25 @@ public class DB {
         text = generateAcceptText(text, theme);
         writeMessage(file, text);
     }
-    public Reason addApplication(Application application){
+    public Status addApplication(Application application){
+
+        System.out.println("FIO          : " + application.fio);
+        System.out.println("DATE         : " + application.date.toString());
+        System.out.println("THEME        : " + application.theme);
+        System.out.println("AMOUNT       : " + application.amount);
+        System.out.println("REQ_SUM      : " + application.reqSum);
+        System.out.println("EMAIL        : " + application.email);
+        System.out.println("ORGANISATION : " + application.organisation);
+        System.out.println("CLASSIFIER   : " + application.classifier);
+
         Calendar applicationDate = Calendar.getInstance();
         applicationDate.setTime(application.date);
+        System.err.println("application date: " + applicationDate.getTime() + " deadline: " + deadline.getTime() + " is after " + applicationDate.after(deadline));
+
+
         if (applicationDate.after(deadline)){
             generateDenyLetter(3, application.fio, application.theme);
-            return Reason.AFTER_DEADLINE;
+            return Status.AFTER_DEADLINE;
         }
         if (ifEverFailed(application.fio)){
             generateDenyLetter(1, application.fio, application.theme);
@@ -346,91 +339,82 @@ public class DB {
                     application
                     (fio, date, amount, theme, requested_sum, email, organisation, classifier, status)
                 VALUES
-                    ('?', '?', ? '?', ?, '?', ?, ?, 0)
+                    (?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """;
         try(PreparedStatement insertApplicationStatement = connection.prepareStatement(sqlInsertApplication)) {
             insertApplicationStatement.setString(1, application.fio);
-            insertApplicationStatement.setDate(2, new Date(application.date.getTime()));
-            insertApplicationStatement.setInt(3, application.amount);
+            insertApplicationStatement.setDate  (2, new Date(application.date.getTime()));
+            insertApplicationStatement.setInt   (3, application.amount);
             insertApplicationStatement.setString(4, application.theme);
             insertApplicationStatement.setDouble(5, application.reqSum);
             insertApplicationStatement.setString(6, application.email);
-            insertApplicationStatement.setInt(7, application.organisation);
-            insertApplicationStatement.setInt(8, application.classifier);
+            insertApplicationStatement.setInt   (7, application.organisation);
+            insertApplicationStatement.setInt   (8, application.classifier);
+
             insertApplicationStatement.executeUpdate();
         } catch (SQLException e){
             e.printStackTrace();
-            return Reason.SQL_ERROR;
+            return Status.SQL_ERROR;
         }
-        return Reason.OK;
+        return Status.OK;
     }
-    public Reason deny(int id){
+    public Status deny(int id){
         String sqlSetStatus = "UPDATE application SET status = 5 WHERE id = ?";
         try(PreparedStatement setStatusStatement = connection.prepareStatement(sqlSetStatus)) {
             setStatusStatement.setInt(1, id);
             int a = setStatusStatement.executeUpdate();
             if(a != 1){
-                return Reason.SQL_ERROR;
+                return Status.SQL_ERROR;
             }
         } catch (SQLException e){
             e.printStackTrace();
         }
         generateDenyLetter(0, id);
-        return Reason.OK;
+        return Status.OK;
     }
     private boolean ifEverFailed(String fio){
-        String sqlSelectId = "SELECT id FROM application WHERE fio = '?' AND status = 2";
+        String sqlSelectId = "SELECT id FROM application WHERE fio = ? AND status = 2";
         try(PreparedStatement selectIdStatement = connection.prepareStatement(sqlSelectId)) {
             selectIdStatement.setString(1, fio);
             try(ResultSet resultSet = selectIdStatement.executeQuery()){
                 if (resultSet.next()) return true;
-            } catch (SQLException e){
-                e.printStackTrace();
             }
         } catch (SQLException e){
             e.printStackTrace();
         }
         return false;
     }
-
-    public Reason accept(int id){
-        String sqlSelectFio    = "SELECT fio FROM application WHERE id = ?";
-        String sqlSelectId     = "SELECT id FROM application WHERE status = 1 AND fio = '?'";
-        String sqlUpdateStatus = "UPDATE application SET status = 1 WHERE id = ?";
+    public Status accept(int id){
+        String sqlSelectFio    = "SELECT fio FROM application WHERE id = ?"
+             , sqlSelectId     = "SELECT id FROM application WHERE status = 1 AND fio = ?"
+             , sqlUpdateStatus = "UPDATE application SET status = 1 WHERE id = ?";
 
         try(    PreparedStatement selectFioStatement    = connection.prepareStatement(sqlSelectFio);
                 PreparedStatement selectIdStatement     = connection.prepareStatement(sqlSelectId);
                 PreparedStatement updateStatusStatement = connection.prepareStatement(sqlUpdateStatus)) {
-            selectFioStatement.setInt(1, id);
 
+            selectFioStatement.setInt(1, id);
             try(ResultSet fio = selectFioStatement.executeQuery()) {
                 start += 10; end += 10;
                 fio.next();
                 String selectedFio = fio.getString("fio");
                 selectIdStatement.setString(1, selectedFio);
-            } catch (SQLException e){
-                e.printStackTrace();
             }
-
             try(ResultSet selectedId = selectIdStatement.executeQuery()){
                 if (selectedId.next()){
                     generateDenyLetter(2, id);
-                    return Reason.APPLICATION_OF_HEAD_ALREADY_APPLIED;
+                    return Status.APPLICATION_OF_HEAD_ALREADY_APPLIED;
                 }
-            } catch (SQLException e){
-                e.printStackTrace();
             }
             updateStatusStatement.setInt(1, id);
             updateStatusStatement.executeUpdate();
         } catch (SQLException e){
             e.printStackTrace();
-            return Reason.SQL_ERROR;
+            return Status.SQL_ERROR;
         }
         generateAcceptLetter(id);
-        return Reason.OK;
+        return Status.OK;
     }
-
-    //TODO: move to the Window class
     public void getPendingApplications(JPanel applications){
         String sqlSelectApplications = "SELECT * FROM application WHERE status = 0 LIMIT ?, ?";
         try(PreparedStatement selectApplicationsStatement = connection.prepareStatement(sqlSelectApplications)) {
@@ -439,35 +423,18 @@ public class DB {
             try(ResultSet resultSet = selectApplicationsStatement.executeQuery()) {
                 start += portion; end += portion;
                 applications.removeAll();
-
                 while (resultSet.next()){
-
-                    JPanel panel = new JPanel(new FlowLayout());
-
-                    JTextField id           = new JTextField(4)
-                             , amount       = new JTextField(4)
-                             , fio          = new JTextField(16)
-                             , theme        = new JTextField(16)
-                             , requestedSum = new JTextField(8)
-                             , classifier   = new JTextField(8);
-
-                    Window.setEditable(false, id, amount, fio, theme, requestedSum, classifier);
-
-                    id          .setText(resultSet.getString("id"));
-                    amount      .setText(resultSet.getString("amount"));
-                    fio         .setText(resultSet.getString("fio"));
-                    theme       .setText(resultSet.getString("theme"));
-                    requestedSum.setText(resultSet.getString("requested_sum"));
-                    classifier  .setText(resultSet.getString("classifier"));
-
-                    Window.addComponents(panel, id, amount, fio, theme, requestedSum, classifier);
-
-                    applications.add(panel);
+                    Window.displayApplications(
+                            applications
+                            , resultSet.getString("id")
+                            , resultSet.getString("amount")
+                            , resultSet.getString("fio")
+                            , resultSet.getString("theme")
+                            , resultSet.getString("requested_sum")
+                            , resultSet.getString("classifier")
+                            );
                 }
-            } catch (SQLException e){
-                e.printStackTrace();
             }
-
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -481,30 +448,16 @@ public class DB {
                 applications.removeAll();
 
                 while (resultSet.next()){
-
-                    JPanel panel = new JPanel(new FlowLayout());
-
-                    JTextField id           = new JTextField(4)
-                             , amount       = new JTextField(4)
-                             , fio          = new JTextField(16)
-                             , theme        = new JTextField(16)
-                             , requestedSum = new JTextField(8)
-                             , classifier   = new JTextField(8);
-
-                    Window.setEditable(false, id, amount, fio, theme, requestedSum, classifier);
-
-                    id          .setText(resultSet.getString("id"));
-                    amount      .setText(resultSet.getString("amount"));
-                    fio         .setText(resultSet.getString("fio"));
-                    theme       .setText(resultSet.getString("theme"));
-                    requestedSum.setText(resultSet.getString("requested_sum"));
-                    classifier  .setText(resultSet.getString("classifier"));
-
-                    Window.addComponents(panel, id, amount, fio, theme, requestedSum, classifier);
-                    applications.add(panel);
+                    Window.displayApplications(
+                            applications
+                            , resultSet.getString("id")
+                            , resultSet.getString("amount")
+                            , resultSet.getString("fio")
+                            , resultSet.getString("theme")
+                            , resultSet.getString("requested_sum")
+                            , resultSet.getString("classifier")
+                    );
                 }
-            } catch (SQLException e){
-                e.printStackTrace();
             }
         } catch (SQLException e){
             e.printStackTrace();
@@ -518,7 +471,7 @@ public class DB {
 
         try(PreparedStatement selectApplicationStatement = connection.prepareStatement(sqlSelectApplication)) {
             String text = "Тема не представляет интереса";
-            selectApplicationStatement.setInt(1, 5);
+            selectApplicationStatement.setInt(1, Status.NO_INTEREST_IN_THEME.ordinal());
             selectApplicationStatement.setInt(2, start);
             selectApplicationStatement.setInt(3, end);
             ResultSet resultSet = null;
@@ -527,7 +480,7 @@ public class DB {
             if (!resultSet5.next()){
                 resultSet5.close();
                 text = "Руководитель имеет проваленные проекты";
-                selectApplicationStatement.setInt(1, 6);
+                selectApplicationStatement.setInt(1, Status.FAILED_IN_PAST.ordinal());
                 selectApplicationStatement.setInt(2, start6);
                 selectApplicationStatement.setInt(3, end6);
                 ResultSet resultSet6 = selectApplicationStatement.executeQuery();
@@ -536,7 +489,7 @@ public class DB {
                 if (!resultSet6.next()){
                     resultSet6.close();
                     text = "Заявка руководителя уже принята";
-                    selectApplicationStatement.setInt(1, 7);
+                    selectApplicationStatement.setInt(1, Status.APPLICATION_OF_HEAD_ALREADY_APPLIED.ordinal());
                     selectApplicationStatement.setInt(2, start7);
                     selectApplicationStatement.setInt(3, end7);
                     ResultSet resultSet7 = selectApplicationStatement.executeQuery();
@@ -545,7 +498,7 @@ public class DB {
                     if (!resultSet7.next()){
                         resultSet7.close();
                         text = "Заявка подана после дедлайна";
-                        selectApplicationStatement.setInt(1, 8);
+                        selectApplicationStatement.setInt(1, Status.AFTER_DEADLINE.ordinal());
                         selectApplicationStatement.setInt(2, start8);
                         selectApplicationStatement.setInt(3, end8);
 
@@ -564,123 +517,77 @@ public class DB {
                 resultSet = resultSet5;
 
             while (resultSet != null && resultSet.next()) {
-                JPanel panel = new JPanel(new FlowLayout());
 
-                JTextField id = new JTextField(4)
-                         , amount = new JTextField(4)
-                         , fio = new JTextField(16)
-                         , theme = new JTextField(16)
-                         , requestedSum = new JTextField(8)
-                         , classifier = new JTextField(8);
-
-                Window.setEditable(false, id, amount, fio, theme, requestedSum, classifier);
-
-                id          .setText(resultSet.getString("id"));
-                amount      .setText(resultSet.getString("amount"));
-                fio         .setText(resultSet.getString("fio"));
-                theme       .setText(resultSet.getString("theme"));
-                requestedSum.setText(resultSet.getString("requested_sum"));
-                classifier  .setText(resultSet.getString("classifier"));
-
-                Window.addComponents(panel, id, amount, fio, theme, requestedSum, classifier);
-
-                applications.add(panel);
+                Window.displayApplications(
+                        applications
+                        , resultSet.getString("id")
+                        , resultSet.getString("amount")
+                        , resultSet.getString("fio")
+                        , resultSet.getString("theme")
+                        , resultSet.getString("requested_sum")
+                        , resultSet.getString("classifier")
+                );
 
                 label.setText(text);
                 applications.add(label);
-                resultSet.beforeFirst();
             }
             if(resultSet != null) resultSet.close();
         } catch (SQLException e){
             e.printStackTrace();
         }
     }
-    public void getFinancialReport(JPanel applications){
-        applications.removeAll();
-        String sqlSelectApplication = "SELECT * FROM application WHERE status = 3 OR status = 4 OR status = 5 LIMIT ?, ?";
-        try(PreparedStatement selectApplicationStatement = connection.prepareStatement(sqlSelectApplication)) {
-            selectApplicationStatement.setInt(1, start);
-            selectApplicationStatement.setInt(2, end);
-            try(ResultSet resultSet = selectApplicationStatement.executeQuery()){
-                while (resultSet.next()){
-                    System.out.println(resultSet.getString(2));
-
-                    JPanel panel = new JPanel(new FlowLayout());
-
-                    JTextField id = new JTextField(4)
-                            , amount = new JTextField(4)
-                            , fio = new JTextField(16)
-                            , theme = new JTextField(16)
-                            , requestedSum = new JTextField(8)
-                            , allottedSum = new JTextField(8)
-                            , classifier = new JTextField(8);
-
-                    Window.setEditable(false, id, amount, fio, theme, requestedSum, allottedSum, classifier);
-
-                    id          .setText(resultSet.getString("id"));
-                    amount      .setText(resultSet.getString("amount"));
-                    fio         .setText(resultSet.getString("fio"));
-                    theme       .setText(resultSet.getString("theme"));
-                    requestedSum.setText(resultSet.getString("requested_sum"));
-                    allottedSum .setText(resultSet.getString("allotted_sum"));
-                    classifier  .setText(resultSet.getString("classifier"));
-
-                    Window.addComponents(panel, id, amount, fio, theme, requestedSum, classifier);
-                    applications.add(panel);
-                }
-            }
-        } catch (SQLException e){
-            e.printStackTrace();
-        }
-    }
     private String generateReportRows(ResultSet applications) throws SQLException {
-        String text = "---------------------------------------------\n";
+        StringBuilder text = new StringBuilder("---------------------------------------------\n");
         while (applications.next()){
-            text += applications.getString("fio")           + " | ";
-            text += applications.getString("theme")         + " | ";
-            text += applications.getString("classifier")    + " | ";
-            text += applications.getString("requested_sum") + " | ";
+            text.append(applications.getString("fio"))          .append(" | ");
+            text.append(applications.getString("theme"))        .append(" | ");
+            text.append(applications.getString("classifier"))   .append(" | ");
+            text.append(applications.getString("requested_sum")).append(" | ");
+
             String allottedSum = applications.getString("allotted_sum");
             if (allottedSum == null) allottedSum = "0";
-            text += allottedSum + "\n";
+            text.append(allottedSum).append("\n");
         }
-        text += "---------------------------------------------\n";
-        return text;
+        text.append("---------------------------------------------\n");
+        return text.toString();
     }
-    private void writeReportRows(PreparedStatement selectApplicationStatement, String text, File file) throws SQLException {
+    private void writeReportRows(PreparedStatement selectApplicationStatement, StringBuilder text, File file) throws SQLException {
         try(ResultSet applications = selectApplicationStatement.executeQuery()) {
-            text += generateReportRows(applications);
+            text.append(generateReportRows(applications));
         }
-        writeMessage(file, text);
+        writeMessage(file, text.toString());
     }
     public boolean financial(){
         String path = "reports/Financial";
-        String text = "ФИНАНСОВФЫЙ ОТЧЕТ\n";
+        StringBuilder text = new StringBuilder("ФИНАНСОВФЫЙ ОТЧЕТ\n");
 
         File file = createFile(path);
         if (file == null) return false;
 
+        writeMessage(file, text.toString());
         try(Statement selectYearStatement = connection.createStatement()) {
             try(ResultSet years = selectYearStatement.executeQuery("SELECT * FROM year")) {
                 while (years.next()){
-                    text += years.getString("year") + "\n";
-                    text += "budget: " + years.getString("budget") + "\n";
+                    text = new StringBuilder(years.getString("year"));
+                    text.append("\n");
+                    text.append("budget: ").append(years.getString("budget")).append("\n");
                     String sqlSelectApplication = "SELECT * FROM application WHERE YEAR(date) = ? AND status = ?";
                     try(PreparedStatement selectApplicationStatement = connection.prepareStatement(sqlSelectApplication)) {
                         selectApplicationStatement.setInt(1, years.getInt("year"));
                         selectApplicationStatement.setInt(2, 1);
-                        text += "Принято\n";
+                        text.append("Принято\n");
                         writeReportRows(selectApplicationStatement, text, file);
-                        text = "Провалено\n";
+                        text = new StringBuilder("Провалено\n");
                         selectApplicationStatement.setInt(2, 2);
                         writeReportRows(selectApplicationStatement, text, file);
-                        text = "В процессе\n";
+                        text = new StringBuilder("В процессе\n");
                         selectApplicationStatement.setInt(2, 4);
                         writeReportRows(selectApplicationStatement, text, file);
-                        text = "Завершено\n";
+                        text = new StringBuilder("Завершено\n");
                         selectApplicationStatement.setInt(2, 3);
                         writeReportRows(selectApplicationStatement, text, file);
                     }
+                    text.append("\n");
                 }
             }
         } catch (SQLException e){

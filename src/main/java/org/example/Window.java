@@ -29,6 +29,8 @@ public class Window {
 
         container = frame.getContentPane();
         container.setLayout(new FlowLayout( FlowLayout.LEFT, 10, 10));
+        frame.setContentPane(container);
+        frame.setVisible(true);
 
         String date;
         java.util.Date dateParsed;
@@ -37,7 +39,7 @@ public class Window {
         do {
             date = JOptionPane.showInputDialog("Введите текущую дату");
             try {
-                isOk = true;
+                isOk       = true;
                 dateParsed = new SimpleDateFormat("dd.MM.yyyy").parse(date);
             } catch (ParseException parseException){
                 parseException.printStackTrace();
@@ -71,6 +73,18 @@ public class Window {
     public static void addComponents(Container container, JComponent... components){
         for (JComponent i: components)
             container.add(i);
+    }
+    public static void displayApplications(JPanel applications, String... values){
+        JPanel panel = new JPanel(new FlowLayout());
+
+        for (String i: values){
+            JTextField iField = new JTextField();
+            iField.setEditable(false);
+            iField.setText(i);
+            panel.add(iField);
+        }
+
+        applications.add(panel);
     }
     private void addComponents(JPanel panel, JComponent... components){
         for (JComponent i: components)
@@ -149,16 +163,14 @@ public class Window {
         reports.addActionListener(e -> reports());
 
         addComponents(alignmentPanel, newApplication, view, reports, writeResults);
-
         container.add(alignmentPanel);
-
-        frame.setContentPane(container);
-        frame.setVisible(true);
+        renewContainer();
     }
     private void writeResults(){
 
         container.removeAll();
         container.setLayout(new VerticalLayout());
+        container.revalidate();
 
         JButton mainMenu = new JButton("Главное меню");
         mainMenu.addActionListener(e -> results());
@@ -198,17 +210,40 @@ public class Window {
             }
         });
 
-        name.addActionListener(e -> {
-            comboBox.removeAllItems();
-            String input = name.getText();
-            String[] searchResults = db.getCompleted(input);
-            for (int i = 0; i < 10; i++){
-                comboBox.addItem(searchResults[i]);
-                System.out.println(searchResults[i]);
-            }
-            renewComponent(comboBox);
-            renewContainer();
-        });
+        name.getDocument().addDocumentListener(
+                new DocumentListener() {
+                    @Override
+                    public void insertUpdate(DocumentEvent e) {
+                        comboBox.removeAllItems();
+                        String input = name.getText();
+                        String[] searchResults = db.getCompleted(input);
+                        for (int i = 0; i < 10; i++){
+                            comboBox.addItem(searchResults[i]);
+                            System.out.println(searchResults[i]);
+                        }
+                        renewComponent(comboBox);
+                        renewContainer();
+                    }
+
+                    @Override
+                    public void removeUpdate(DocumentEvent e) {
+                        comboBox.removeAllItems();
+                        String input = name.getText();
+                        String[] searchResults = db.getCompleted(input);
+                        for (int i = 0; i < 10; i++){
+                            comboBox.addItem(searchResults[i]);
+                            System.out.println(searchResults[i]);
+                        }
+                        renewComponent(comboBox);
+                        renewContainer();
+                    }
+
+                    @Override
+                    public void changedUpdate(DocumentEvent e) {
+
+                    }
+                }
+        );
 
         addComponents(search, name, comboBox, success, fail);
         addComponents(container, search);
@@ -296,12 +331,33 @@ public class Window {
 
         DataBaseObject[] org = new DataBaseObject[10];
         DataBaseObject[] res = new DataBaseObject[10];
+        updateBox(organisationBox, org, "", "organisation");
+        updateBox(researchBox,     res, "", "research");
+        System.err.println("ORGANISATIONS");
+        for (int i = 0; i < org.length; i++){
+            System.err.print(i);
+            if (org[i] != null) System.err.println(" " + org[i].name);
+            else System.err.println();
+        }
+        System.err.println("\nRESEARCH");
+
+        for (int i = 0; i < res.length; i++){
+            System.err.print(i);
+            if (res[i] != null) System.err.println(" " + res[i].name);
+            else System.err.println();
+        }
+        System.err.println();
 
         organisationBox.addActionListener(e -> {
             String item = (String)organisationBox.getSelectedItem();
+            //System.err.println("ORGANISATION ITEM " + item);
             if(item == null) return;
+            int ind = 0;
             for (DataBaseObject i: org){
+               // System.err.println(ind + " " + i);
+                ind++;
                 if(i != null && i.name.equals(item)){
+                   // System.err.println("ORGANISATION i id:" + i.id + "; name:" +i.name);
                     application.organisation = i.id;
                     break;
                 };
@@ -310,9 +366,14 @@ public class Window {
 
         researchBox.addActionListener(e -> {
             String item = (String)researchBox.getSelectedItem();
+            //System.err.println("RESEARCH ITEM " + item + "; array length is " + res.length);
             if(item == null) return;
+            int ind = 0;
             for (DataBaseObject i: res){
+                //System.err.println(ind + " " + i);
+                ind++;
                 if(i != null && i.name.equals(item)){
+                    //System.err.println("RESEARCH i id:" + i.id + "; name:" +i.name);
                     application.classifier = i.id;
                     break;
                 };
@@ -322,7 +383,9 @@ public class Window {
         classifier.getDocument().addDocumentListener(
                 new DocumentListener() {
                     @Override
-                    public void insertUpdate(DocumentEvent e) {}
+                    public void insertUpdate(DocumentEvent e) {
+                        updateBox(researchBox, res, classifier.getText(), "research");
+                    }
 
                     @Override
                     public void removeUpdate(DocumentEvent e) {
@@ -331,7 +394,7 @@ public class Window {
 
                     @Override
                     public void changedUpdate(DocumentEvent e) {
-                        updateBox(researchBox, res, classifier.getText(), "research");
+
                     }
                 }
         );

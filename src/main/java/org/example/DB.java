@@ -314,7 +314,6 @@ public class DB {
 
         Calendar applicationDate = Calendar.getInstance();
         applicationDate.setTime(application.date);
-        System.err.println("application date: " + applicationDate.getTime() + " deadline: " + deadline.getTime() + " is after " + applicationDate.after(deadline));
 
         if (applicationDate.after(deadline)){
             generateDenyLetter(3, application.fio, application.theme);

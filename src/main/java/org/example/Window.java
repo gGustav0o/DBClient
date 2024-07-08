@@ -32,9 +32,9 @@ public class Window {
         frame.setContentPane(container);
         frame.setVisible(true);
 
-        String date;
+        String         date;
+        boolean        isOk;
         java.util.Date dateParsed;
-        boolean isOk;
 
         do {
             date = JOptionPane.showInputDialog("Введите текущую дату");
@@ -92,7 +92,7 @@ public class Window {
     }
     private void clear(){
         db.start = 0;
-        db.end = 10;
+        db.end   = 10;
 
         container.removeAll();
         container.setLayout(new BorderLayout());
@@ -106,10 +106,10 @@ public class Window {
         container.repaint();
     }
     private void renewContainer(JComponent component){
-        container.revalidate();
-        container.repaint();
         component.revalidate();
         component.repaint();
+        container.revalidate();
+        container.repaint();
     }
     private void results(){
         if (db.results()) {
@@ -157,10 +157,10 @@ public class Window {
         JPanel alignmentPanel = new JPanel(new FlowLayout());
         alignmentPanel.setBorder(BorderFactory.createTitledBorder("Главное меню"));
 
-        writeResults.addActionListener(e -> writeResults());
+        view          .addActionListener(e -> consider());
+        reports       .addActionListener(e -> reports());
+        writeResults  .addActionListener(e -> writeResults());
         newApplication.addActionListener(e -> newApplication());
-        view.addActionListener(e -> consider());
-        reports.addActionListener(e -> reports());
 
         addComponents(alignmentPanel, newApplication, view, reports, writeResults);
         container.add(alignmentPanel);
@@ -219,7 +219,6 @@ public class Window {
                         String[] searchResults = db.getCompleted(input);
                         for (int i = 0; i < 10; i++){
                             comboBox.addItem(searchResults[i]);
-                            System.out.println(searchResults[i]);
                         }
                         renewComponent(comboBox);
                         renewContainer();
@@ -232,7 +231,6 @@ public class Window {
                         String[] searchResults = db.getCompleted(input);
                         for (int i = 0; i < 10; i++){
                             comboBox.addItem(searchResults[i]);
-                            System.out.println(searchResults[i]);
                         }
                         renewComponent(comboBox);
                         renewContainer();
@@ -323,60 +321,36 @@ public class Window {
             }
         });
 
-        fio.addActionListener(e -> application.fio = fio.getText());
+        fio   .addActionListener(e -> application.fio    = fio  .getText());
+        theme .addActionListener(e -> application.theme  = theme.getText());
+        email .addActionListener(e -> application.email  = email.getText());
         amount.addActionListener(e -> application.amount = Integer.parseInt(amount.getText()));
         reqSum.addActionListener(e -> application.reqSum = Integer.parseInt(reqSum.getText()));
-        theme.addActionListener(e -> application.theme = theme.getText());
-        email.addActionListener(e -> application.email = email.getText());
 
         DataBaseObject[] org = new DataBaseObject[10];
         DataBaseObject[] res = new DataBaseObject[10];
         updateBox(organisationBox, org, "", "organisation");
         updateBox(researchBox,     res, "", "research");
-        System.err.println("ORGANISATIONS");
-        for (int i = 0; i < org.length; i++){
-            System.err.print(i);
-            if (org[i] != null) System.err.println(" " + org[i].name);
-            else System.err.println();
-        }
-        System.err.println("\nRESEARCH");
-
-        for (int i = 0; i < res.length; i++){
-            System.err.print(i);
-            if (res[i] != null) System.err.println(" " + res[i].name);
-            else System.err.println();
-        }
-        System.err.println();
 
         organisationBox.addActionListener(e -> {
             String item = (String)organisationBox.getSelectedItem();
-            //System.err.println("ORGANISATION ITEM " + item);
             if(item == null) return;
-            int ind = 0;
             for (DataBaseObject i: org){
-               // System.err.println(ind + " " + i);
-                ind++;
                 if(i != null && i.name.equals(item)){
-                   // System.err.println("ORGANISATION i id:" + i.id + "; name:" +i.name);
                     application.organisation = i.id;
                     break;
-                };
+                }
             }
         });
 
         researchBox.addActionListener(e -> {
             String item = (String)researchBox.getSelectedItem();
-            //System.err.println("RESEARCH ITEM " + item + "; array length is " + res.length);
             if(item == null) return;
-            int ind = 0;
             for (DataBaseObject i: res){
-                //System.err.println(ind + " " + i);
-                ind++;
                 if(i != null && i.name.equals(item)){
-                    //System.err.println("RESEARCH i id:" + i.id + "; name:" +i.name);
                     application.classifier = i.id;
                     break;
-                };
+                }
             }
         });
 
@@ -451,7 +425,7 @@ public class Window {
 
 
             String message = "";
-            String title = "Добавление заявки";
+            String title   = "Добавление заявки";
             switch (db.addApplication(application)){
                 case OK             -> message = "Добавлено!";
                 case AFTER_DEADLINE -> message = "Заявка подана слишком поздно!";
@@ -511,9 +485,9 @@ public class Window {
     private void consider(){
         clear();
 
-        JPanel p = new JPanel(new GridLayout(2, 1));
+        JPanel controls = new JPanel(new GridLayout(2, 1));
         JButton mainMenu = new JButton("Главное меню");
-        p.add(mainMenu);
+        controls.add(mainMenu);
 
         JButton prev   = new JButton("<")
               , accept = new JButton("Принять заявку")
@@ -527,16 +501,16 @@ public class Window {
 
         panel.add(title, BorderLayout.NORTH);
 
-        JPanel b = new JPanel(new FlowLayout());
-        addComponents(b, prev, accept, deny, next);
+        JPanel navigation = new JPanel(new FlowLayout());
+        addComponents(navigation, prev, accept, deny, next);
 
-        Color c = Color.PINK;
-        p.setBackground(c);
-        p.setSize(new Dimension(500, 20));
-        panel.setSize(new Dimension(300, 700));
-        p.add(b);
-        container.add(p, BorderLayout.NORTH);
-        container.add(panel, BorderLayout.CENTER);
+        Color color = Color.PINK;
+        controls.setBackground(color);
+        controls.setSize(new Dimension(500, 20));
+        panel   .setSize(new Dimension(300, 700));
+        controls.add(navigation);
+        container.add(controls, BorderLayout.NORTH);
+        container.add(panel   , BorderLayout.CENTER);
 
         renewContainer();
 
@@ -581,10 +555,10 @@ public class Window {
             try {
                 if (db.start == 0) return;
                 db.start -= 20;
-                db.end -= 20;
+                db.end   -= 20;
                 if (db.start < 0) {
                     db.start += 10;
-                    db.end += 10;
+                    db.end   += 10;
                     return;
                 }
                 db.getPendingApplications(applications);
@@ -607,8 +581,8 @@ public class Window {
 
         JButton mainMenu = new JButton("Главное меню");
 
-        JPanel p = new JPanel(new GridLayout(2, 1));
-        p.add(mainMenu);
+        JPanel controls = new JPanel(new GridLayout(2, 1));
+        controls.add(mainMenu);
 
         JButton prev = new JButton("<")
               , next = new JButton(">");
@@ -623,14 +597,14 @@ public class Window {
 
         panel.add(title, BorderLayout.NORTH);
 
-        JPanel b = new JPanel(new FlowLayout());
-        addComponents(b, prev, label, next);
+        JPanel navigation = new JPanel(new FlowLayout());
+        addComponents(navigation, prev, label, next);
 
-        p.setSize(new Dimension(500, 20));
-        panel.setSize(new Dimension(300, 700));
-        p.add(b);
-        container.add(p, BorderLayout.NORTH);
-        container.add(panel, BorderLayout.CENTER);
+        controls.setSize(new Dimension(500, 20));
+        panel   .setSize(new Dimension(300, 700));
+        controls.add(navigation);
+        container.add(controls, BorderLayout.NORTH);
+        container.add(panel   , BorderLayout.CENTER);
 
         renewContainer();
 
@@ -641,10 +615,10 @@ public class Window {
         prev.addActionListener(e -> {
             try {
                 db.start -= 10;
-                db.end -= 10;
+                db.end   -= 10;
                 if (db.start < 0) {
                     db.start += 10;
-                    db.end += 10;
+                    db.end   += 10;
                     return;
                 }
                 db.getAcceptedApplications(applications);
@@ -670,8 +644,8 @@ public class Window {
 
         JButton mainMenu = new JButton("Главное меню");
 
-        JPanel p = new JPanel(new GridLayout(2, 1));
-        p.add(mainMenu);
+        JPanel controls = new JPanel(new GridLayout(2, 1));
+        controls.add(mainMenu);
 
         JButton prev = new JButton("<")
               , next = new JButton(">");
@@ -680,20 +654,20 @@ public class Window {
         label.setText("Отклоненный заявки");
 
         JPanel panel = new JPanel(new BorderLayout())
-              , title = new JPanel(new FlowLayout());
+             , title = new JPanel(new FlowLayout());
 
         addTitle(title);
 
         panel.add(title, BorderLayout.NORTH);
 
-        JPanel b = new JPanel(new FlowLayout());
-        addComponents(b, prev, label, next);
+        JPanel navigation = new JPanel(new FlowLayout());
+        addComponents(navigation, prev, label, next);
 
-        p.setSize(new Dimension(500, 20));
-        panel.setSize(new Dimension(300, 700));
-        p.add(b);
-        container.add(p, BorderLayout.NORTH);
-        container.add(panel, BorderLayout.CENTER);
+        controls.setSize(new Dimension(500, 20));
+        panel   .setSize(new Dimension(300, 700));
+        controls.add(navigation);
+        container.add(controls, BorderLayout.NORTH);
+        container.add(panel   , BorderLayout.CENTER);
 
         renewContainer();
 
@@ -704,22 +678,38 @@ public class Window {
         prev.addActionListener(e -> {
             if (db.start == 0) return;
             try {
-                if (db.start8 > 0){ db.start8 -= 20; db.end8 -= 20;}
-                else if (db.start7 > 0) {db.start7 -= 20; db.end7 -= 20;}
-                else  if (db.start6 > 0){db.start6 -= 20; db.end6 -= 20;}
-                else {db.start -= 20; db.end -= 20;}
+                if (db.start8 > 0){
+                    db.start8 -= 20;
+                    db.end8   -= 20;
+                }
+                else if (db.start7 > 0) {
+                    db.start7 -= 20;
+                    db.end7   -= 20;
+                }
+                else  if (db.start6 > 0){
+                    db.start6 -= 20;
+                    db.end6   -= 20;
+                }
+                else {
+                    db.start -= 20;
+                    db.end   -= 20;
+                }
 
                 if (db.start < 0) {
-                    db.start += 10; db.end += 10;
+                    db.start += 10;
+                    db.end   += 10;
                 }
                 if (db.start6 < 0) {
-                    db.start6 += 10; db.end6 += 10;
+                    db.start6 += 10;
+                    db.end6   += 10;
                 }
                 if (db.start7 < 0) {
-                    db.start7 += 10; db.end7 += 10;
+                    db.start7 += 10;
+                    db.end7   += 10;
                 }
                 if (db.start8 < 0) {
-                    db.start8 += 10; db.end8 += 10;
+                    db.start8 += 10;
+                    db.end8   += 10;
                 }
 
                 db.getDeniedApplications(applications);
@@ -754,7 +744,7 @@ public class Window {
         renewContainer();
 
         financial.addActionListener(e -> financial());
-        accepted.addActionListener(e -> accepted());
-        denied.addActionListener(e -> declined());
+        accepted .addActionListener(e -> accepted());
+        denied   .addActionListener(e -> declined());
     }
 }

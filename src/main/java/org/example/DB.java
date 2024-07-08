@@ -120,7 +120,7 @@ public class DB {
         return file.exists() && !file.isDirectory();
     }
     public boolean setResult(String name, boolean status){
-        int r;
+        int updated;
         String sqlUpdateStatus = "UPDATE application SET status = ? WHERE status = 4 AND fio = ?";
         try(PreparedStatement updateStatusStatement = connection.prepareStatement(sqlUpdateStatus)) {
             updateStatusStatement.setString(2,name);
@@ -130,12 +130,12 @@ public class DB {
             else
                 updateStatusStatement.setInt(1, 2);
 
-            r = updateStatusStatement.executeUpdate();
+            updated = updateStatusStatement.executeUpdate();
         } catch (SQLException e){
             e.printStackTrace();
             return false;
         }
-        return r > 0;
+        return updated > 0;
     }
     public boolean results(){
         String sqlGetDeadline   = "SELECT deadline FROM year WHERE year = ? "
@@ -233,16 +233,16 @@ public class DB {
         return file;
     }
     private String generateDenyText(String name, String theme, int status){
-        String text = name + "!\n";
-        text += "Ваша заявка по теме " + theme + " была отклонена по причине:\n";
+        StringBuilder text = new StringBuilder(name + "!\n");
+        text.append("Ваша заявка по теме ").append(theme).append(" была отклонена по причине:\n");
         switch (status) {
-            case 0 -> text += "Тема исследования не представляет интереса.\n";
-            case 1 -> text += "Руководитель провалил проект ранее.\n";
-            case 2 -> text += "Руководителю уже одобрена заявка на другой проект.\n";
-            case 3 -> text += "Заявка подана позднее срока.\n";
+            case 0 -> text.append("Тема исследования не представляет интереса.\n");
+            case 1 -> text.append("Руководитель провалил проект ранее.\n");
+            case 2 -> text.append("Руководителю уже одобрена заявка на другой проект.\n");
+            case 3 -> text.append("Заявка подана позднее срока.\n");
         }
-        text += "С уважением,\nРоссийский Фонд Фундаментальных Исследованний.";
-        return text;
+        text.append("С уважением,\nРоссийский Фонд Фундаментальных Исследованний.");
+        return text.toString();
     }
     private void generateDenyLetter(int status, int id){
         String text  = ""
@@ -283,49 +283,38 @@ public class DB {
             e.printStackTrace();
         }
     }
-    private String generateAcceptText(String name, String theme){
-        String text = name + "!\n";
-        text += "Ваша заявка по теме " + theme + " была принята.\nЖелаем удачи в исследованиях!\n";
-        text += "С уважением,\nРоссийский Фонд Фундаментальных Исследованний.";
-        return text;
+    private String generateAcceptText(StringBuilder name, StringBuilder theme){
+        StringBuilder text = name.append("!\n");
+        text.append("Ваша заявка по теме ").append(theme).append(" была принята.\nЖелаем удачи в исследованиях!\n");
+        text.append("С уважением,\nРоссийский Фонд Фундаментальных Исследованний.");
+        return text.toString();
     }
     private void generateAcceptLetter(int id){
-        String text  = ""
-             , theme = ""
-             , path  = "acceptLetters/";
+        StringBuilder text  = new StringBuilder()
+                    , theme = new StringBuilder()
+                    , path  = new StringBuilder("acceptLetters/");
 
         String sqlGetFioTheme = "SELECT fio, theme FROM application WHERE id = ?";
         try (PreparedStatement getFioThemeStatement = connection.prepareStatement(sqlGetFioTheme)){
             getFioThemeStatement.setInt(1, id);
             try(ResultSet resultSet = getFioThemeStatement.executeQuery()){
                 resultSet.next();
-                text  = resultSet.getString("fio");
-                theme = resultSet.getString("theme");
-                path  = path + text;
+                text .append(resultSet.getString("fio"));
+                theme.append(resultSet.getString("theme"));
+                path .append(text);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        File file = createFile(path);
-        text = generateAcceptText(text, theme);
-        writeMessage(file, text);
+        File file = createFile(path.toString());
+        writeMessage(file, generateAcceptText(text, theme));
     }
     public Status addApplication(Application application){
-
-        System.out.println("FIO          : " + application.fio);
-        System.out.println("DATE         : " + application.date.toString());
-        System.out.println("THEME        : " + application.theme);
-        System.out.println("AMOUNT       : " + application.amount);
-        System.out.println("REQ_SUM      : " + application.reqSum);
-        System.out.println("EMAIL        : " + application.email);
-        System.out.println("ORGANISATION : " + application.organisation);
-        System.out.println("CLASSIFIER   : " + application.classifier);
 
         Calendar applicationDate = Calendar.getInstance();
         applicationDate.setTime(application.date);
         System.err.println("application date: " + applicationDate.getTime() + " deadline: " + deadline.getTime() + " is after " + applicationDate.after(deadline));
-
 
         if (applicationDate.after(deadline)){
             generateDenyLetter(3, application.fio, application.theme);
